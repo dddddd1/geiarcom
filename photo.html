@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H5摄像头调用示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .description {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 宽高比 */
+            background-color: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        #capture-btn {
+            background: #e74c3c;
+        }
+        
+        #capture-btn:hover {
+            background: #c0392b;
+        }
+        
+        .photo-preview {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        #photo {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+        
+        .permission-note {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            color: #856404;
+            border-left: 4px solid #ffeeba;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+            border-left: 4px solid #f5c6cb;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+            border-left: 4px solid #c3e6cb;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #ecf0f1;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>H5摄像头调用演示</h1>
+        
+        <p class="description">
+            此页面演示了如何使用HTML5的API调用手机摄像头或电脑摄像头。
+            请点击"开启摄像头"按钮开始使用，然后您可以拍照并保存照片。
+        </p>
+        
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+        </div>
+        
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+        
+        <div class="controls">
+            <button id="start-btn">开启摄像头</button>
+            <button id="capture-btn" disabled>拍照</button>
+            <button id="switch-btn" disabled>切换摄像头</button>
+            <button id="stop-btn" disabled>关闭摄像头</button>
+        </div>
+        
+        <div class="photo-preview">
+            <img id="photo" alt="拍照预览">
+        </div>
+        
+        <div class="permission-note">
+            <p>注意：首次使用需要授予摄像头访问权限。部分浏览器可能需要HTTPS环境才能使用摄像头功能。</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>H5摄像头调用示例 &copy; 2023</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('video');
+            const startBtn = document.getElementById('start-btn');
+            const captureBtn = document.getElementById('capture-btn');
+            const switchBtn = document.getElementById('switch-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const photo = document.getElementById('photo');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            let stream = null;
+            let currentFacingMode = 'environment'; // 默认后置摄像头
+            
+            // 显示消息函数
+            function showMessage(element, message) {
+                element.textContent = message;
+                element.style.display = 'block';
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 5000);
+            }
+            
+            // 获取摄像头访问权限
+            async function startCamera(facingMode = 'environment') {
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: facingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = stream;
+                    
+                    // 启用按钮
+                    captureBtn.disabled = false;
+                    switchBtn.disabled = false;
+                    stopBtn.disabled = false;
+                    startBtn.disabled = true;
+                    
+                    showMessage(successMessage, '摄像头已成功开启！');
+                } catch (error) {
+                    console.error('获取摄像头访问权限时出错:', error);
+                    let errorMsg = '无法访问摄像头: ';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        errorMsg += '用户拒绝了权限请求';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMsg += '未找到摄像头设备';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMsg += '摄像头已被其他应用程序使用';
+                    } else {
+                        errorMsg += error.message;
+                    }
+                    
+                    showMessage(errorMessage, errorMsg);
+                }
+            }
+            
+            // 停止摄像头
+            function stopCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                    video.srcObject = null;
+                    
+                    // 禁用按钮
+                    captureBtn.disabled = true;
+                    switchBtn.disabled = true;
+                    stopBtn.disabled = true;
+                    startBtn.disabled = false;
+                    
+                    showMessage(successMessage, '摄像头已关闭');
+                }
+            }
+            
+            // 拍照
+            function capturePhoto() {
+                if (!stream) return;
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                photo.src = canvas.toDataURL('image/png');
+                photo.style.display = 'block';
+                
+                showMessage(successMessage, '照片已拍摄！右键点击图片可保存');
+            }
+            
+            // 切换摄像头
+            function switchCamera() {
+                stopCamera();
+                currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                startCamera(currentFacingMode);
+            }
+            
+            // 事件监听
+            startBtn.addEventListener('click', () => startCamera());
+            stopBtn.addEventListener('click', stopCamera);
+            captureBtn.addEventListener('click', capturePhoto);
+            switchBtn.addEventListener('click', switchCamera);
+            
+            // 检查浏览器支持
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showMessage(errorMessage, '您的浏览器不支持摄像头API，请使用现代浏览器如Chrome、Firefox或Safari');
+                startBtn.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
