@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /zb_users/
+Disallow: /zb_system/
+
+Sitemap: https://www.geiar.com/sitemap.xml
